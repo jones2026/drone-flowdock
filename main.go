@@ -19,10 +19,10 @@ func main() {
 
 	message := os.Getenv("PLUGIN_MESSAGE")
 	if message == "" {
-		// repoName := os.Getenv("DRONE_REPO")
-		// buildLink := os.Getenv("PLUGIN_FLOW_TOKEN")
-		// buildStatus := os.Getenv("DRONE_STATUS")
-		message = "Drone build passed"
+		repoName := os.Getenv("DRONE_REPO")
+		buildLink := os.Getenv("DRONE_BUILD_LINK")
+		buildStatus := os.Getenv("DRONE_BUILD_STATUS")
+		message = fmt.Sprintf("Status of build [%s](%s) is %s", repoName, buildLink, buildStatus)
 	}
 
 	msg := struct {

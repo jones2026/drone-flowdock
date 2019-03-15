@@ -1,4 +1,3 @@
-FROM alpine:3.9.2
-RUN apk update && apk add ca-certificates && rm -rf /var/cache/apk/*
+FROM scratch
 COPY drone-flowdock /bin/
 ENTRYPOINT ["/bin/drone-flowdock"]
