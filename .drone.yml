@@ -7,8 +7,6 @@ steps:
   - name: test
     image: "golang:1.11"
     commands:
-      - env
-      - "go test"
       - 'CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -ldflags ''-extldflags "-static"'' .'
   - name: publish
     image: plugins/docker
