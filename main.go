@@ -9,6 +9,23 @@ import (
 	"os"
 )
 
+func postMessage(msg, flowURL string) {
+	raw, err := json.Marshal(msg)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	resp, err := http.Post(flowURL, "application/json", bytes.NewReader(raw))
+	if resp != nil {
+		fmt.Println(resp.Status)
+		resp.Body.Close()
+	}
+
+	if err != nil {
+		log.Fatalln(err)
+	}
+}
+
 func main() {
 	apiURL := "https://api.flowdock.com/messages?flow_token="
 
@@ -16,6 +33,7 @@ func main() {
 	if flowToken == "" {
 		log.Fatalln("Missing flow token")
 	}
+	flowURL := apiURL + flowToken
 
 	message := os.Getenv("PLUGIN_MESSAGE")
 	if message == "" {
@@ -25,27 +43,27 @@ func main() {
 		message = fmt.Sprintf("Status of build [%s](%s) is %s", repoName, buildLink, buildStatus)
 	}
 
-	msg := struct {
-		Event   string `json:"event"`
-		Content string `json:"content"`
-	}{
-		Event:   "message",
-		Content: message,
-	}
+	messageType := os.Getenv("PLUGIN_MESSAGE_TYPE")
 
-	raw, err := json.Marshal(msg)
-	if err != nil {
-		log.Fatalln(err)
-	}
+	if messageType == "activity" {
+		msg := struct {
+			Event   string `json:"event"`
+			Title string `json:"title"`
+		}{
+			Event:   "activity",
+			Title: message,
+		}
 
-	flowURL := apiURL + flowToken
-	resp, err := http.Post(flowURL, "application/json", bytes.NewReader(raw))
-	if resp != nil {
-		fmt.Println(resp.Status)
-		resp.Body.Close()
-	}
+		postMessage(msg, flowURL)
+	} else {
+		msg := struct {
+			Event   string `json:"event"`
+			Content string `json:"content"`
+		}{
+			Event:   "message",
+			Content: message,
+		}
 
-	if err != nil {
-		log.Fatalln(err)
+		postMessage(msg, flowURL)
 	}
 }
