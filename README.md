@@ -20,7 +20,7 @@ flow_token | yes | Flowdock token for flow that message will be posted to
 - name: flowdock
   image: jones2026/drone-flowdock
   settings:
-      message: ":red_circle: failure on Drone :point_right: http://drone.company.com/${DRONE_REPO,,}/${DRONE_BUILD_NUMBER,,}"
+      message: ":red_circle: failure on Drone :point_right: ${DRONE_BUILD_LINK}"
       flow_token:
           from_secret: FLOWDOCK_TOKEN
   when:
