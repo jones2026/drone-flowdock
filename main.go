@@ -19,7 +19,7 @@ type inboxMessage struct {
 	Title string `json:"title"`
 }
 
-func postMessage(raw, err, flowURL string) {
+func postMessage(raw []byte, err error, flowURL string) {
 	if err != nil {
 		log.Fatalln(err)
 	}
