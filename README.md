@@ -13,6 +13,7 @@ Drone plugin to push messages to Flowdock
 ------------- | ------------- | ----------
 message | yes | message that will be posted to Flowdock
 flow_token | yes | Flowdock token for flow that message will be posted to
+message_type | yes | specify [Flowdock MessageType](https://www.flowdock.com/api/message-types) currently supported types are: `message`, `activity`
 
 #### Example usage
 
