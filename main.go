@@ -9,8 +9,17 @@ import (
 	"os"
 )
 
-func postMessage(msg, flowURL string) {
-	raw, err := json.Marshal(msg)
+type flowMessage struct {
+	Event   string `json:"event"`
+	Content string `json:"content"`
+}
+
+type inboxMessage struct {
+	Event   string `json:"event"`
+	Title string `json:"title"`
+}
+
+func postMessage(raw, err, flowURL string) {
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -46,24 +55,22 @@ func main() {
 	messageType := os.Getenv("PLUGIN_MESSAGE_TYPE")
 
 	if messageType == "activity" {
-		msg := struct {
-			Event   string `json:"event"`
-			Title string `json:"title"`
-		}{
+		msg :=  inboxMessage {
 			Event:   "activity",
 			Title: message,
 		}
 
-		postMessage(msg, flowURL)
+		raw, err := json.Marshal(msg)
+
+		postMessage(raw, err, flowURL)
 	} else {
-		msg := struct {
-			Event   string `json:"event"`
-			Content string `json:"content"`
-		}{
+		msg := flowMessage {
 			Event:   "message",
 			Content: message,
 		}
 
-		postMessage(msg, flowURL)
+		raw, err := json.Marshal(msg)
+
+		postMessage(raw, err, flowURL)
 	}
 }
