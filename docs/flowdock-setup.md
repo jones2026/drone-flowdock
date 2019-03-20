@@ -3,7 +3,7 @@
 To post to Flowdock using Drone, you will need to make sure you have the correct token in Flowdock.
 
 ##### 1. Go to User > Account in upper-left corner of screen
-![Android](images/user_account.png)
+![Flowdock User Account](images/user_account.png)
 ##### 2. Click on `Developer Applications`
 ##### 3. Click on `New Application`
 ##### 4. Enter `Name` (example: "Drone")
