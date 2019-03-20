@@ -10,8 +10,6 @@ To post to Flowdock using Drone, you will need to make sure you have the correct
 ##### 5. Select `Shortcut Application` checkbox
 ##### 6. (Optional) Add `Description`, `Help` and `Icons`
 ##### 7. Enter `Demo Source` (example: "Drone") and select flow
-![Android](images/generate_source.png)
 ##### 8. Click `Generate Source`
 ##### 9. Copy generated token to use in Drone
 ##### 10. Profit :+1:
-
