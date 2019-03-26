@@ -1,24 +1,34 @@
+---
 kind: pipeline
 name: default
+
+platform:
+  os: linux
+  arch: amd64
+
+steps:
+- name: test
+  image: golang:1.12
+  commands:
+  - "CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -ldflags '-extldflags \"-static\"' ."
+
+- name: publish
+  image: plugins/docker
+  settings:
+    auto_tag: true
+    cache_from: "${DRONE_REPO,,}:latest"
+    password:
+      from_secret: docker_password
+    repo: "${DRONE_REPO,,}"
+    username:
+      from_secret: docker_username
+  when:
+    event:
+    - push
+    - tag
+
 trigger:
   branch:
-    - master
-steps:
-  - name: test
-    image: "golang:1.11"
-    commands:
-      - 'CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -ldflags ''-extldflags "-static"'' .'
-  - name: publish
-    image: plugins/docker
-    settings:
-      repo: "${DRONE_REPO,,}"
-      cache_from: "${DRONE_REPO,,}:latest"
-      tags: latest
-      username:
-        from_secret: docker_username
-      password:
-        from_secret: docker_password
-    when:
-      event:
-        - push
-        - tag
+  - master
+
+...
