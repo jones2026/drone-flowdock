@@ -9,13 +9,15 @@ import (
 	"os"
 )
 
+var logFatalf = log.Fatalf
+
 type flowMessage struct {
 	Event   string `json:"event"`
 	Content string `json:"content"`
 }
 
 type inboxMessage struct {
-	Event   string `json:"event"`
+	Event string `json:"event"`
 	Title string `json:"title"`
 }
 
@@ -26,6 +28,9 @@ func postMessage(raw []byte, err error, flowURL string) {
 
 	resp, err := http.Post(flowURL, "application/json", bytes.NewReader(raw))
 	if resp != nil {
+		if resp.StatusCode != 202 {
+			logFatalf("Failed to post message, flowdock api returned: %s", resp.Status)
+		}
 		fmt.Println(resp.Status)
 		resp.Body.Close()
 	}
@@ -40,7 +45,7 @@ func main() {
 
 	flowToken := os.Getenv("PLUGIN_FLOW_TOKEN")
 	if flowToken == "" {
-		log.Fatalln("Missing flow token")
+		log.Fatalln("Missing setting: flow_token")
 	}
 	flowURL := apiURL + flowToken
 
@@ -55,8 +60,8 @@ func main() {
 	messageType := os.Getenv("PLUGIN_MESSAGE_TYPE")
 
 	if messageType == "activity" {
-		msg :=  inboxMessage {
-			Event:   "activity",
+		msg := inboxMessage{
+			Event: "activity",
 			Title: message,
 		}
 
@@ -64,7 +69,7 @@ func main() {
 
 		postMessage(raw, err, flowURL)
 	} else {
-		msg := flowMessage {
+		msg := flowMessage{
 			Event:   "message",
 			Content: message,
 		}
