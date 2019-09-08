@@ -15,7 +15,9 @@ import (
 )
 
 var logFatalf = log.Fatalf
+var openFile = os.Open
 var settings pluginSettings
+var apiURL = "https://api.flowdock.com/messages?flow_token="
 
 type pluginSettings struct {
 	Message   string `required:"true"`
@@ -39,9 +41,6 @@ func main() {
 		logFatalf(err.Error())
 	}
 
-	apiURL := "https://api.flowdock.com/messages?flow_token="
-	flowURL := apiURL + settings.FlowToken
-
 	msg := messageEvent{
 		Event:   "message",
 		Content: settings.Message,
@@ -53,10 +52,10 @@ func main() {
 	}
 
 	client := &http.Client{}
-	messageThread := postMessage(client, raw, flowURL)
+	messageThread := postMessage(client, raw)
 
 	if settings.File != "" {
-		upload(client, flowURL, settings.File, messageThread)
+		uploadFile(client, settings.File, messageThread)
 	}
 
 }
@@ -66,10 +65,19 @@ func fetchSettings() error {
 	return err
 }
 
-func postMessage(client *http.Client, raw []byte, flowURL string) string {
-	req, _ := http.NewRequest("POST", flowURL, bytes.NewReader(raw))
-	req.Header.Set("Content-Type", "application/json")
+func getFlowdockRequest(b *bytes.Buffer) *http.Request {
+	flowURL := apiURL + settings.FlowToken
+	req, err := http.NewRequest("POST", flowURL, b)
+	if err != nil {
+		logFatalf(err.Error())
+	}
 	req.Header.Set("X-flowdock-wait-for-message", "true")
+	return req
+}
+
+func postMessage(client *http.Client, raw []byte) string {
+	b := bytes.NewBuffer(raw)
+	req := getFlowdockRequest(b)
 
 	resp, err := client.Do(req)
 	if err != nil {
@@ -93,7 +101,7 @@ func postMessage(client *http.Client, raw []byte, flowURL string) string {
 	return messageThread
 }
 
-func upload(client *http.Client, url string, file string, thread string) {
+func uploadFile(client *http.Client, file string, thread string) {
 	var b bytes.Buffer
 	w := multipart.NewWriter(&b)
 	fileUpload := mustOpen(file)
@@ -118,12 +126,8 @@ func upload(client *http.Client, url string, file string, thread string) {
 	}
 	w.Close()
 
-	req, err := http.NewRequest("POST", url, &b)
-	if err != nil {
-		log.Fatalln(err)
-	}
+	req := getFlowdockRequest(&b)
 	req.Header.Set("Content-Type", w.FormDataContentType())
-	req.Header.Set("X-flowdock-wait-for-message", "true")
 
 	res, err := client.Do(req)
 	if err != nil {
@@ -138,7 +142,7 @@ func upload(client *http.Client, url string, file string, thread string) {
 }
 
 func mustOpen(f string) *os.File {
-	r, err := os.Open(f)
+	r, err := openFile(f)
 	if err != nil {
 		panic(err)
 	}
