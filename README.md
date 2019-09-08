@@ -1,5 +1,5 @@
 [![Build Status](https://cloud.drone.io/api/badges/jones2026/drone-flowdock/status.svg)](https://cloud.drone.io/jones2026/drone-flowdock)
-[![Docker Pulls](https://img.shields.io/docker/pulls/jones2026/drone-flowdock)]
+![Docker Pulls](https://img.shields.io/docker/pulls/jones2026/drone-flowdock)
 
 # drone-flowdock
 Drone plugin to push messages to Flowdock
