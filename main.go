@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
@@ -11,18 +10,22 @@ import (
 	"net/http"
 	"os"
 	"strings"
+
+	"github.com/kelseyhightower/envconfig"
 )
 
 var logFatalf = log.Fatalf
+var settings pluginSettings
+
+type pluginSettings struct {
+	Message   string `required:"true"`
+	File      string
+	FlowToken string `required:"true" split_words:"true"`
+}
 
 type messageEvent struct {
 	Event   string `json:"event"`
 	Content string `json:"content"`
-}
-
-type activityEvent struct {
-	Event string `json:"event"`
-	Title string `json:"title"`
 }
 
 type flowdockResponse struct {
@@ -30,82 +33,64 @@ type flowdockResponse struct {
 }
 
 func main() {
+
+	err := fetchSettings()
+	if err != nil {
+		logFatalf(err.Error())
+	}
+
 	apiURL := "https://api.flowdock.com/messages?flow_token="
+	flowURL := apiURL + settings.FlowToken
 
-	flowToken := os.Getenv("PLUGIN_FLOW_TOKEN")
-	if flowToken == "" {
-		log.Fatalln("Missing setting: flow_token")
-	}
-	flowURL := apiURL + flowToken
-
-	message := os.Getenv("PLUGIN_MESSAGE")
-	if message == "" {
-		repoName := os.Getenv("DRONE_REPO")
-		buildLink := os.Getenv("DRONE_BUILD_LINK")
-		buildStatus := os.Getenv("DRONE_BUILD_STATUS")
-		message = fmt.Sprintf("Status of build [%s](%s) is %s", repoName, buildLink, buildStatus)
+	msg := messageEvent{
+		Event:   "message",
+		Content: settings.Message,
 	}
 
-	eventType := os.Getenv("PLUGIN_MESSAGE_TYPE")
-
-	if eventType == "activity" {
-		msg := activityEvent{
-			Event: "activity",
-			Title: message,
-		}
-
-		raw, err := json.Marshal(msg)
-		if err != nil {
-			log.Fatalln(err)
-		}
-
-		postMessage(raw, flowURL)
-	} else {
-		msg := messageEvent{
-			Event:   "message",
-			Content: message,
-		}
-
-		raw, err := json.Marshal(msg)
-		if err != nil {
-			log.Fatalln(err)
-		}
-
-		postMessage(raw, flowURL)
-	}
-}
-
-func postMessage(raw []byte, flowURL string) {
-	req, err := http.NewRequest("POST", flowURL, bytes.NewReader(raw))
+	raw, err := json.Marshal(msg)
 	if err != nil {
 		log.Fatalln(err)
 	}
+
+	client := &http.Client{}
+	messageThread := postMessage(client, raw, flowURL)
+
+	if settings.File != "" {
+		upload(client, flowURL, settings.File, messageThread)
+	}
+
+}
+
+func fetchSettings() error {
+	err := envconfig.Process("PLUGIN", &settings)
+	return err
+}
+
+func postMessage(client *http.Client, raw []byte, flowURL string) string {
+	req, _ := http.NewRequest("POST", flowURL, bytes.NewReader(raw))
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("X-flowdock-wait-for-message", "true")
 
-	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
 		log.Fatalln(err)
 	}
+	var messageThread string
 	if resp != nil {
 		body, _ := ioutil.ReadAll(resp.Body)
-		messageThread := getThread(body)
-		if resp.StatusCode == 201 {
-			log.Println("Success! flowdock posted message to thread: " + messageThread)
-		} else if resp.StatusCode == 202 {
-			log.Println("Warning, flowdock didn't return thread id: " + resp.Status)
+		if resp.StatusCode == http.StatusCreated {
+			messageThread = getThread(body)
+			log.Println("Flowdock message posted to thread: " + messageThread)
 		} else {
 			logFatalf("Failed to post message, flowdock api returned: %s", resp.Status)
 		}
 		resp.Body.Close()
-
-		upload(client, flowURL, "coffee.gif", messageThread)
 	}
 
 	if err != nil {
 		log.Fatalln(err)
 	}
+	return messageThread
 }
 
 func upload(client *http.Client, url string, file string, thread string) {
@@ -121,11 +106,11 @@ func upload(client *http.Client, url string, file string, thread string) {
 
 	for key, r := range values {
 		var fw io.Writer
-		if x, ok := r.(io.Closer); ok {
-			defer x.Close()
+		if file, ok := r.(io.Closer); ok {
+			defer file.Close()
 		}
-		if x, ok := r.(*os.File); ok {
-			fw, _ = w.CreateFormFile(key, x.Name())
+		if file, ok := r.(*os.File); ok {
+			fw, _ = w.CreateFormFile(key, file.Name())
 		} else {
 			fw, _ = w.CreateFormField(key)
 		}
@@ -138,16 +123,17 @@ func upload(client *http.Client, url string, file string, thread string) {
 		log.Fatalln(err)
 	}
 	req.Header.Set("Content-Type", w.FormDataContentType())
+	req.Header.Set("X-flowdock-wait-for-message", "true")
 
 	res, err := client.Do(req)
 	if err != nil {
 		log.Fatalln(err)
 	}
 
-	if res.StatusCode != http.StatusAccepted {
-		logFatalf("Failed to post file: %s", res.Status)
-	} else {
+	if res.StatusCode == http.StatusCreated {
 		log.Printf("Added file %s to thread: %s", fileUpload.Name(), thread)
+	} else {
+		logFatalf("Failed to post file: %s", res.Status)
 	}
 }
 
