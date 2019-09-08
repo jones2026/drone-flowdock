@@ -65,6 +65,7 @@ func main() {
 				fileUpload := mustOpen(filename)
 				uploadFile(client, fileUpload, messageThread)
 			} else {
+				log.Printf("Maximum files (%d) to attach exceeded. Skipping remaining files.", settings.MaxFiles)
 				break
 			}
 		}
