@@ -11,16 +11,20 @@ steps:
   image: golang:1.12
   commands:
   - go test -v -cover
-  - "CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -ldflags '-extldflags \"-static\"' ."
+
+- name: build
+  image: golang:1.12
+  commands:
+  - CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -ldflags '-extldflags "-static"' .
 
 - name: publish
   image: plugins/docker
   settings:
     auto_tag: true
-    cache_from: "${DRONE_REPO,,}:latest"
+    cache_from: ${DRONE_REPO,,}:latest
     password:
       from_secret: docker_password
-    repo: "${DRONE_REPO,,}"
+    repo: ${DRONE_REPO,,}
     username:
       from_secret: docker_username
   when:
