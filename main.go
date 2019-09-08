@@ -9,6 +9,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/kelseyhightower/envconfig"
@@ -21,7 +22,8 @@ var apiURL = "https://api.flowdock.com/messages?flow_token="
 
 type pluginSettings struct {
 	Message   string `required:"true"`
-	File      string
+	Files     string
+	MaxFiles  int    `default:"5" split_words:"true"`
 	FlowToken string `required:"true" split_words:"true"`
 }
 
@@ -54,8 +56,18 @@ func main() {
 	client := &http.Client{}
 	messageThread := postMessage(client, raw)
 
-	if settings.File != "" {
-		uploadFile(client, settings.File, messageThread)
+	if settings.Files != "" {
+		var filesUploaded = 0
+		matches, _ := filepath.Glob(settings.Files)
+		for _, filename := range matches {
+			if filesUploaded < settings.MaxFiles {
+				filesUploaded++
+				fileUpload := mustOpen(filename)
+				uploadFile(client, fileUpload, messageThread)
+			} else {
+				break
+			}
+		}
 	}
 
 }
@@ -78,6 +90,7 @@ func getFlowdockRequest(b *bytes.Buffer) *http.Request {
 func postMessage(client *http.Client, raw []byte) string {
 	b := bytes.NewBuffer(raw)
 	req := getFlowdockRequest(b)
+	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := client.Do(req)
 	if err != nil {
@@ -101,13 +114,12 @@ func postMessage(client *http.Client, raw []byte) string {
 	return messageThread
 }
 
-func uploadFile(client *http.Client, file string, thread string) {
+func uploadFile(client *http.Client, file *os.File, thread string) {
 	var b bytes.Buffer
 	w := multipart.NewWriter(&b)
-	fileUpload := mustOpen(file)
 
 	values := map[string]io.Reader{
-		"content":   fileUpload,
+		"content":   file,
 		"thread_id": strings.NewReader(thread),
 		"event":     strings.NewReader("file"),
 	}
@@ -135,7 +147,7 @@ func uploadFile(client *http.Client, file string, thread string) {
 	}
 
 	if res.StatusCode == http.StatusCreated {
-		log.Printf("Added file %s to thread: %s", fileUpload.Name(), thread)
+		log.Printf("Added file %s to thread: %s", file.Name(), thread)
 	} else {
 		logFatalf("Failed to post file: %s", res.Status)
 	}

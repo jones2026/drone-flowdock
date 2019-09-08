@@ -45,7 +45,7 @@ func TestExitWithBadResponseStatus(t *testing.T) {
 	f, _ := os.Create(fileName)
 	f.Close()
 	defer os.Remove(f.Name())
-	uploadFile(client, fileName, "some_thread_id")
+	uploadFile(client, f, "some_thread_id")
 	expectedUploadError := "Failed to post file: [503 Service Unavailable]"
 	if actualError != expectedUploadError {
 		t.Fatalf("Expected error:\n%s\ngot:\n%s", expectedUploadError, actualError)
