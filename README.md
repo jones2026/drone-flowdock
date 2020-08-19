@@ -1,5 +1,6 @@
 [![Build Status](https://cloud.drone.io/api/badges/jones2026/drone-flowdock/status.svg)](https://cloud.drone.io/jones2026/drone-flowdock)
 [![Docker Pulls](https://img.shields.io/docker/pulls/jones2026/drone-flowdock)](https://hub.docker.com/r/jones2026/drone-flowdock/)
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fjones2026%2Fdrone-flowdock.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Fjones2026%2Fdrone-flowdock?ref=badge_shield)
 
 # drone-flowdock
 Drone plugin to push messages to Flowdock
@@ -29,3 +30,7 @@ max_files | no | Defaults to 5. This is to ensure the flow is not flooded if the
       status:
           - failure
 ```
+
+
+## License
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fjones2026%2Fdrone-flowdock.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2Fjones2026%2Fdrone-flowdock?ref=badge_large)
